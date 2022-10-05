@@ -4,6 +4,8 @@ const app = express()
 
 const routaProdutos = require("./routes/produtos")
 
+app.use(express.urlencoded({extended: false}))
+app.use(express.json())
 app.use(morgan('dev'))
 app.use('/produtos', routaProdutos)
 

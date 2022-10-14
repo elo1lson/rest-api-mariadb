@@ -17,9 +17,9 @@ router.get('/', (req, res) => {
           quantidade: result.length,
           produtos: result.map(prod => {
             return {
-              id_produto: req.body.id_produto,
-              nome: req.body.nome,
-              preco: req.body.preco,
+              id_produto: prod.id_produto,
+              nome: prod.nome,
+              preco: prod.preco,
               request: {
                 tipo: 'GET',
                 descricao: '',
@@ -54,7 +54,7 @@ router.get('/:id', (req, res) => {
 
         }
         const response = {
-          produtoCriado: {
+          produto: {
             id_produto: result.id_produto,
             nome: result[0].nome,
             preco: result[0].preco,

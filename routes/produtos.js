@@ -1,6 +1,34 @@
 const express = require('express')
 const router = express.Router()
 const mysql = require('../mysql').pool
+const multer = require('multer')
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, './uploads')
+
+  },
+  filename: function (req, file, cb) {
+
+    cb(null, new Date().toISOString() + file.originalname)
+
+  }
+})
+
+const filter = (req, file, cb) => {
+  if (file.mimetype == 'image/png' || file.mimetype == 'image/jpg' || file.mimetype == 'image/jpeg') {
+    cb(null, true)
+  } else {
+    cb(null, false)
+  }
+}
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 1024 * 1024 * 10
+  },
+  fileFilter: filter
+})
 
 router.get('/', (req, res) => {
   mysql.getConnection((error, conn) => {
@@ -20,6 +48,7 @@ router.get('/', (req, res) => {
               id_produto: prod.id_produto,
               nome: prod.nome,
               preco: prod.preco,
+              imagem_produto: prod.imagem_produto,
               request: {
                 tipo: 'GET',
                 descricao: '',
@@ -53,11 +82,14 @@ router.get('/:id', (req, res) => {
           })
 
         }
+        let image = result[0].imagem_produto || ''
         const response = {
           produto: {
             id_produto: result.id_produto,
             nome: result[0].nome,
             preco: result[0].preco,
+            imagem_produto: req.protocol + '://' + req.get('host') + image,
+
             request: {
               tipo: 'DELETE',
               descricao: '',
@@ -71,14 +103,20 @@ router.get('/:id', (req, res) => {
   })
 })
 
-router.post('/', (req, res, next) => {
+router.post('/', upload.single('produto_imagem'), (req, res, next) => {
+  console.log(req.file);
+  console.log(req.body);
   mysql.getConnection((error, conn) => {
     if (error) {
       return res.status(500).send({ error: error })
     }
     conn.query(
-      'INSERT INTO produtos (nome, preco) VALUES (?,?)',
-      [req.body.nome, req.body.preco],
+      'INSERT INTO produtos (nome, preco, imagem_produto) VALUES (?,?,?)',
+      [
+        req.body.nome,
+        req.body.preco,
+        req.file.path
+      ],
       (error, result, field) => {
         conn.release()
 
@@ -91,12 +129,12 @@ router.post('/', (req, res, next) => {
             id_produto: result.id_produto,
             nome: result.nome,
             preco: result.preco,
+            imagem_produto: req.protocol + '://' + req.get('host') + req.file.path,
             request: {
               tipo: 'POST',
               descricao: '',
               url: req.protocol + '://' + req.get('host') + req.originalUrl
             }
-
           }
         }
         res.status(201).send({ response })
@@ -135,12 +173,12 @@ router.patch('/', (req, res, next) => {
             id_produto: result.id_produto,
             nome: result.nome,
             preco: result.preco,
+            imagem_produto: result.imagem_produto || '',
             request: {
               tipo: 'POST',
               descricao: '',
               url: req.protocol + '://' + req.get('host') + req.originalUrl + req.body.id
             }
-
           }
         }
         res.status(201).send({ response })

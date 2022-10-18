@@ -9,18 +9,30 @@ router.get('/', (req, res, next) => {
       return res.status(500).send({ error: error })
     }
     conn.query(
-      'SELECT * FROM pedidos',
+      `SELECT pedidos.id_pedido,
+              pedidos.quantidade,
+              produtos.id_produto,
+              produtos.nome,
+              produtos.preco
+        FROM  pedidos
+  INNER JOIN produtos
+          ON produtos.id_produto = pedidos.id_produto;
+      `,
       (error, result, fields) => {
         if (error) {
           return res.status(500).send({ error: error })
         }
         const response = {
-          quantidade: result.length,
           pedidos: result.map(pedido => {
             return {
-              id_produto: pedido.id_produto,
               id_pedido: pedido.id_pedido,
               quantidade: pedido.quantidade,
+              produto: {
+                id_produto: pedido.id_produto,
+                nome: pedido.nome,
+                preco: pedido.preco
+
+              },
               request: {
                 tipo: 'GET',
                 descricao: '',
@@ -83,9 +95,11 @@ router.post('/', (req, res, next) => {
         if (error) return res.status(500).send({ error: error })
 
         if (result.length == 0) {
+
           return res.status(404).send({
             mensagem: 'Produto não encontrado'
-          })
+           
+          }) 
 
         }
       }
@@ -99,6 +113,7 @@ router.post('/', (req, res, next) => {
 
         if (error) {
           return res.status(500).send({ error: error })
+
         }
 
         const response = {
